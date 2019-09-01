@@ -12,6 +12,7 @@ pub enum MessageType {
     RadioReceive = 4,
     RadioSend = 5,
     EnergyDetect = 6,
+    RadioState = 7,
 }
 
 impl MessageType {
@@ -23,6 +24,7 @@ impl MessageType {
             4 => MessageType::RadioReceive,
             5 => MessageType::RadioSend,
             6 => MessageType::EnergyDetect,
+            7 => MessageType::RadioState,
             _ => MessageType::None,
         }
     }
