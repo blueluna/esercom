@@ -59,6 +59,21 @@ pub fn com_decode(
     Ok((mt, in_size, length))
 }
 
+pub fn com_decode_ex(
+    input: &[u8],
+    output: &mut [u8],
+    work: &mut [u8],
+) -> Result<(MessageType, usize, usize), error::Error> {
+    let (in_size, out_size) = slip::decode(input, work)?;
+    if out_size < 2 || out_size != (work[0] as usize) {
+        return Err(error::Error::InvalidLength(in_size));
+    }
+    let mt = MessageType::from_bits(work[1]);
+    let length = out_size - 2;
+    output[..length].copy_from_slice(&work[2..out_size]);
+    Ok((mt, in_size, length))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -89,6 +104,27 @@ mod tests {
 
         let data = [0xfe, 0x01, 0x8e, 0xc0];
         let result = com_decode(&data, &mut buf);
+        assert_eq!(result, Err(error::Error::InvalidLength(4)));
+    }
+
+    #[test]
+    fn decode_ex() {
+        let mut buf = [0u8; 32];
+        let mut work = [0u8; 1024];
+        let data = [0xc0, 0x04, 0x02, 0x01, 0x8e, 0xc0];
+        let (mt, used, size) = com_decode_ex(&data, &mut buf, &mut work).unwrap();
+        assert_eq!(used, 6);
+        assert_eq!(size, 2);
+        assert_eq!(mt, MessageType::GetValue);
+
+        let data = [0x04, 0x02, 0x01, 0x8e, 0xc0];
+        let (mt, used, size) = com_decode_ex(&data, &mut buf, &mut work).unwrap();
+        assert_eq!(used, 5);
+        assert_eq!(size, 2);
+        assert_eq!(mt, MessageType::GetValue);
+
+        let data = [0xfe, 0x01, 0x8e, 0xc0];
+        let result = com_decode_ex(&data, &mut buf, &mut work);
         assert_eq!(result, Err(error::Error::InvalidLength(4)));
     }
 }
